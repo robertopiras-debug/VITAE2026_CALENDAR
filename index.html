@@ -706,15 +706,20 @@ async function submitRsvp(eventId, inviteeId, status, btn) {
   msgEl.textContent = 'Salvataggio...';
 
   try {
-    // Upsert RSVP
-    await sb('rsvp', 'POST',
-      { event_id: eventId, invitee_id: inviteeId, status, responded_at: new Date().toISOString() },
-      { 'Prefer': 'resolution=merge-duplicates,return=representation' }
-    );
-    // Aggiorna locale
-    const idx = allRsvp.findIndex(r => r.event_id === eventId && r.invitee_id === inviteeId);
-    if (idx >= 0) allRsvp[idx].status = status;
-    else allRsvp.push({ event_id: eventId, invitee_id: inviteeId, status });
+    const existing = allRsvp.find(r => r.event_id === eventId && r.invitee_id === inviteeId);
+    if (existing) {
+      // Record esiste → PATCH
+      await sb(`rsvp?event_id=eq.${eventId}&invitee_id=eq.${inviteeId}`, 'PATCH',
+        { status, responded_at: new Date().toISOString() }
+      );
+      existing.status = status;
+    } else {
+      // Record non esiste → POST
+      const res = await sb('rsvp', 'POST',
+        { event_id: eventId, invitee_id: inviteeId, status, responded_at: new Date().toISOString() }
+      );
+      allRsvp.push(res[0]);
+    }
 
     msgEl.innerHTML = `<span style="color:var(--yes)">✓ Risposta salvata: <strong>${statusLabel(status)}</strong></span>`;
     renderPublic();
