@@ -307,6 +307,24 @@
   .empty .icon { font-size: 2.5rem; margin-bottom: 12px; }
 
 
+
+  /* DASHBOARD MATRIX */
+  .dash-wrap { overflow-x:auto; }
+  .dash-table { border-collapse:collapse; font-size:0.78rem; min-width:100%; }
+  .dash-table th { background:var(--surface2); padding:6px 8px; text-align:center; border:1px solid var(--border); font-weight:700; white-space:nowrap; position:sticky; top:0; z-index:2; }
+  .dash-table th.name-col { text-align:left; position:sticky; left:0; z-index:3; background:var(--surface2); min-width:150px; }
+  .dash-table th.del-col { position:sticky; left:150px; z-index:3; background:var(--surface2); min-width:45px; }
+  .dash-table td { padding:4px 6px; border:1px solid var(--border); text-align:center; vertical-align:middle; }
+  .dash-table td.name-col { text-align:left; font-weight:600; position:sticky; left:0; background:var(--surface); z-index:1; white-space:nowrap; padding:4px 10px; }
+  .dash-table td.del-col { position:sticky; left:150px; background:var(--surface); z-index:1; }
+  .dash-cell { width:36px; height:28px; border-radius:5px; border:none; cursor:pointer; font-size:0.8rem; font-weight:700; transition:all 0.15s; display:inline-flex; align-items:center; justify-content:center; width:100%; }
+  .dash-cell:hover { filter:brightness(1.15); transform:scale(1.08); }
+  .dash-cell-yes { background:var(--yes); color:#fff; }
+  .dash-cell-no { background:var(--no); color:#fff; }
+  .dash-cell-maybe { background:var(--maybe); color:#fff; }
+  .dash-cell-pending { background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
+  .dash-totals td { font-weight:700; background:var(--surface2); }
+
   /* ADMIN RSVP OVERRIDE */
   .admin-rsvp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:6px; margin-top:10px; }
   .admin-rsvp-row { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:7px; background:var(--surface2); border:1px solid var(--border); font-size:0.8rem; }
@@ -321,6 +339,24 @@
   .arb-reset { background:var(--pending); color:#fff; opacity:0.4; }
   .arb-reset:hover { opacity:0.8; }
 
+
+
+  /* DASHBOARD MATRIX */
+  .dash-wrap { overflow-x:auto; }
+  .dash-table { border-collapse:collapse; font-size:0.78rem; min-width:100%; }
+  .dash-table th { background:var(--surface2); padding:6px 8px; text-align:center; border:1px solid var(--border); font-weight:700; white-space:nowrap; position:sticky; top:0; z-index:2; }
+  .dash-table th.name-col { text-align:left; position:sticky; left:0; z-index:3; background:var(--surface2); min-width:150px; }
+  .dash-table th.del-col { position:sticky; left:150px; z-index:3; background:var(--surface2); min-width:45px; }
+  .dash-table td { padding:4px 6px; border:1px solid var(--border); text-align:center; vertical-align:middle; }
+  .dash-table td.name-col { text-align:left; font-weight:600; position:sticky; left:0; background:var(--surface); z-index:1; white-space:nowrap; padding:4px 10px; }
+  .dash-table td.del-col { position:sticky; left:150px; background:var(--surface); z-index:1; }
+  .dash-cell { width:36px; height:28px; border-radius:5px; border:none; cursor:pointer; font-size:0.8rem; font-weight:700; transition:all 0.15s; display:inline-flex; align-items:center; justify-content:center; width:100%; }
+  .dash-cell:hover { filter:brightness(1.15); transform:scale(1.08); }
+  .dash-cell-yes { background:var(--yes); color:#fff; }
+  .dash-cell-no { background:var(--no); color:#fff; }
+  .dash-cell-maybe { background:var(--maybe); color:#fff; }
+  .dash-cell-pending { background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
+  .dash-totals td { font-weight:700; background:var(--surface2); }
 
   /* ADMIN RSVP OVERRIDE */
   .admin-rsvp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:6px; margin-top:10px; }
@@ -468,7 +504,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v8</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v9</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -479,6 +515,7 @@
     <div class="tab" id="tab-rsvp" data-panel="panel-rsvp" onclick="switchTab(this)" style="display:none">✅ La mia risposta</div>
     <div class="tab admin-tab" data-panel="panel-admin-events" onclick="switchTab(this)" style="display:none">🗓️ Gestione Riunioni</div>
     <div class="tab admin-tab" data-panel="panel-admin-invitees" onclick="switchTab(this)" style="display:none">👥 Gestione Invitati</div>
+    <div class="tab admin-tab" data-panel="panel-admin-dashboard" onclick="switchTab(this)" style="display:none">📊 Dashboard</div>
   </div>
 
   <!-- PANEL: RIUNIONI PUBBLICO -->
@@ -499,6 +536,12 @@
       <button class="btn btn-primary btn-sm" onclick="openModalEvent()">+ Nuova Riunione</button>
     </div>
     <div id="admin-events-list"><div class="loading">Caricamento...</div></div>
+  </div>
+
+  <!-- PANEL: ADMIN DASHBOARD -->
+  <div id="panel-admin-dashboard" class="panel">
+    <div class="section-title">Dashboard disponibilità</div>
+    <div id="admin-dashboard-container"><div class="loading">Caricamento...</div></div>
   </div>
 
   <!-- PANEL: ADMIN INVITATI -->
@@ -843,6 +886,7 @@ async function saveEvent() {
     await fetchAll();
     renderPublic();
     renderAdminEvents();
+    renderAdminDashboard();
     closeModal('modal-event');
   } catch(e) {
     alert('Errore: ' + e.message);
@@ -886,6 +930,121 @@ async function deleteEvent(id, title) {
     renderAdminEvents();
   } catch(e) { alert('Errore: ' + e.message); }
 }
+
+// ═══════════════════════════════════════════════════════
+// ADMIN — DASHBOARD MATRICE
+// ═══════════════════════════════════════════════════════
+function renderAdminDashboard() {
+  const container = document.getElementById('admin-dashboard-container');
+  if (!container) return;
+  if (!allEvents.length || !allInvitees.length) {
+    container.innerHTML = '<div class="empty"><div class="icon">📊</div><p>Nessun dato.</p></div>';
+    return;
+  }
+
+  // Header date abbreviate
+  const dateHeaders = allEvents.map(ev => {
+    const d = new Date(ev.event_date + 'T12:00:00');
+    return `<th title="${ev.title}">${d.getDate()}/${d.getMonth()+1}</th>`;
+  }).join('');
+
+  // Riga per ogni invitato
+  const rows = allInvitees.map(inv => {
+    const cells = allEvents.map(ev => {
+      const rsvp = allRsvp.find(r => r.event_id === ev.id && r.invitee_id === inv.id);
+      const status = rsvp ? rsvp.status : 'none';
+      const labels = { yes:'✓', no:'✗', maybe:'?', pending:'·', none:'' };
+      const cls = status === 'none' ? 'dash-cell-pending' : `dash-cell-${status}`;
+      const nextStatus = { yes:'no', no:'maybe', maybe:'pending', pending:'yes', none:'yes' };
+      return `<td><button class="dash-cell ${cls}" 
+        onclick="dashCycle('${ev.id}','${inv.id}','${status}',this)"
+        title="${inv.name} — ${ev.title}">${labels[status] || ''}</button></td>`;
+    }).join('');
+
+    const delBadge = inv.delegazione 
+      ? `<span style="font-size:0.7rem;font-weight:700;background:var(--accent);color:#fff;padding:1px 6px;border-radius:3px">${inv.delegazione}</span>`
+      : '—';
+
+    return `<tr>
+      <td class="name-col">${inv.name}</td>
+      <td class="del-col" style="text-align:center">${delBadge}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  // Riga totali Sì per ogni data
+  const totals = allEvents.map(ev => {
+    const yes = allRsvp.filter(r => r.event_id === ev.id && r.status === 'yes').length;
+    const maybe = allRsvp.filter(r => r.event_id === ev.id && r.status === 'maybe').length;
+    return `<td style="font-size:0.75rem"><span style="color:var(--yes);font-weight:700">${yes}</span><span style="color:var(--text2)">+${maybe}</span></td>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="font-size:0.78rem;color:var(--text2);margin-bottom:8px">
+      Clicca una cella per cambiare la risposta: ✓ Sì → ✗ No → ? Forse → · In attesa → ricomincia
+    </div>
+    <div class="dash-wrap">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th class="name-col">Nominativo</th>
+            <th class="del-col">Del.</th>
+            ${dateHeaders}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+          <tr class="dash-totals">
+            <td class="name-col" colspan="2" style="text-align:right;font-size:0.75rem;color:var(--text2)">Sì + Forse →</td>
+            ${totals}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function dashCycle(eventId, inviteeId, currentStatus, btn) {
+  const cycle = { yes:'no', no:'maybe', maybe:'pending', pending:'yes', none:'yes' };
+  const newStatus = cycle[currentStatus] || 'yes';
+  const labels = { yes:'✓', no:'✗', maybe:'?', pending:'·' };
+  const classes = { yes:'dash-cell-yes', no:'dash-cell-no', maybe:'dash-cell-maybe', pending:'dash-cell-pending' };
+
+  // Ottimistico: aggiorna UI subito
+  btn.className = `dash-cell ${classes[newStatus]}`;
+  btn.textContent = labels[newStatus];
+  btn.onclick = () => dashCycle(eventId, inviteeId, newStatus, btn);
+
+  try {
+    const existing = allRsvp.find(r => r.event_id === eventId && r.invitee_id === inviteeId);
+    if (existing) {
+      await sb(`rsvp?event_id=eq.${eventId}&invitee_id=eq.${inviteeId}`, 'PATCH',
+        { status: newStatus, responded_at: new Date().toISOString() });
+      existing.status = newStatus;
+    } else {
+      const res = await sb('rsvp', 'POST',
+        { event_id: eventId, invitee_id: inviteeId, status: newStatus, responded_at: new Date().toISOString() });
+      allRsvp.push(res[0]);
+    }
+    // Aggiorna totali e vista pubblica
+    renderPublic();
+    // Aggiorna riga totali nella dashboard senza ridisegnare tutto
+    const totalsRow = document.querySelector('.dash-totals');
+    if (totalsRow) {
+      const tds = totalsRow.querySelectorAll('td:not([colspan])');
+      allEvents.forEach((ev, i) => {
+        const yes = allRsvp.filter(r => r.event_id === ev.id && r.status === 'yes').length;
+        const maybe = allRsvp.filter(r => r.event_id === ev.id && r.status === 'maybe').length;
+        if (tds[i]) tds[i].innerHTML = `<span style="color:var(--yes);font-weight:700">${yes}</span><span style="color:var(--text2)">+${maybe}</span>`;
+      });
+    }
+  } catch(e) {
+    alert('Errore: ' + e.message);
+    // Rollback visivo
+    btn.className = `dash-cell ${classes[currentStatus] || 'dash-cell-pending'}`;
+    btn.textContent = labels[currentStatus] || '';
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════
 // ADMIN — INVITATI
@@ -1139,6 +1298,7 @@ function switchTab(el) {
   el.classList.add('active');
   document.getElementById(el.dataset.panel).classList.add('active');
   if (el.dataset.panel === 'panel-rsvp') loadMyRsvp(lockedInviteeId);
+  if (el.dataset.panel === 'panel-admin-dashboard') renderAdminDashboard();
 }
 
 function switchToPanel(panelId) {
