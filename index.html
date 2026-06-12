@@ -504,7 +504,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v9</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v10</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -1025,8 +1025,9 @@ async function dashCycle(eventId, inviteeId, currentStatus, btn) {
         { event_id: eventId, invitee_id: inviteeId, status: newStatus, responded_at: new Date().toISOString() });
       allRsvp.push(res[0]);
     }
-    // Aggiorna totali e vista pubblica
+    // Aggiorna tutte le viste
     renderPublic();
+    renderAdminEvents();
     // Aggiorna riga totali nella dashboard senza ridisegnare tutto
     const totalsRow = document.querySelector('.dash-totals');
     if (totalsRow) {
