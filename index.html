@@ -396,10 +396,10 @@
   </div>
 </div>
 
-<!-- MODAL NUOVO INVITATO -->
+<!-- MODAL NUOVO/MODIFICA INVITATO -->
 <div id="modal-invitee" class="modal-overlay hidden">
   <div class="modal-box">
-    <h3>Nuovo Invitato</h3>
+    <h3 id="modal-invitee-title">Nuovo Invitato</h3>
     <div class="form-group">
       <label>Nome e Cognome *</label>
       <input type="text" id="inv-name" placeholder="Mario Rossi" />
@@ -434,7 +434,7 @@
 <main>
   <div class="tabs" id="tabs">
     <div class="tab active" data-panel="panel-public" onclick="switchTab(this)">📋 Riunioni</div>
-    <div class="tab" data-panel="panel-rsvp" onclick="switchTab(this)">✅ La mia risposta</div>
+    <div class="tab" id="tab-rsvp" data-panel="panel-rsvp" onclick="switchTab(this)" style="display:none">✅ La mia risposta</div>
     <div class="tab admin-tab" data-panel="panel-admin-events" onclick="switchTab(this)" style="display:none">🗓️ Gestione Riunioni</div>
     <div class="tab admin-tab" data-panel="panel-admin-invitees" onclick="switchTab(this)" style="display:none">👥 Gestione Invitati</div>
   </div>
@@ -446,14 +446,8 @@
 
   <!-- PANEL: LA MIA RISPOSTA -->
   <div id="panel-rsvp" class="panel">
-    <div class="card" style="margin-bottom:20px">
-      <div class="invitee-selector">
-        <label>Chi sei?</label>
-        <select id="rsvp-invitee-select" onchange="loadMyRsvp()">
-          <option value="">— Seleziona il tuo nome —</option>
-        </select>
-      </div>
-      <div style="font-size:0.78rem;color:var(--text2)">Seleziona il tuo nome per vedere le riunioni e rispondere.</div>
+    <div class="card" style="margin-bottom:20px" id="identity-card">
+      <!-- popolato da renderIdentityCard() -->
     </div>
     <div id="rsvp-events-list"></div>
   </div>
@@ -497,6 +491,7 @@ let allEvents = [];
 let allInvitees = [];
 let allRsvp = [];
 let editingEventId = null;
+let editingInviteeId = null;
 let selectedAssignees = new Set();
 
 // ═══════════════════════════════════════════════════════
@@ -647,8 +642,38 @@ function populateInviteeSelect() {
     allInvitees.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
 }
 
-function loadMyRsvp() {
-  const inviteeId = document.getElementById('rsvp-invitee-select').value;
+// Aggiorna la card di identificazione in base al contesto:
+// - con deep link: mostra solo il nome bloccato, niente menu
+// - senza deep link: mostra il menu a tendina normale
+function renderIdentityCard(lockedInviteeId) {
+  const card = document.getElementById('identity-card');
+  if (lockedInviteeId) {
+    const inv = allInvitees.find(i => i.id === lockedInviteeId);
+    const name = inv ? inv.name : '—';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:1.5rem">👤</div>
+        <div>
+          <div style="font-weight:700;font-size:1rem">${name}</div>
+          <div style="font-size:0.78rem;color:var(--text2)">Stai rispondendo con il tuo link personale.</div>
+        </div>
+      </div>`;
+  } else {
+    card.innerHTML = `
+      <div class="invitee-selector">
+        <label>Chi sei?</label>
+        <select id="rsvp-invitee-select" onchange="loadMyRsvp()">
+          <option value="">— Seleziona il tuo nome —</option>
+        </select>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text2)">Seleziona il tuo nome per vedere le riunioni e rispondere.</div>`;
+    populateInviteeSelect();
+  }
+}
+
+function loadMyRsvp(forcedInviteeId) {
+  const inviteeId = forcedInviteeId ||
+    (document.getElementById('rsvp-invitee-select') ? document.getElementById('rsvp-invitee-select').value : '');
   const container = document.getElementById('rsvp-events-list');
   if (!inviteeId) { container.innerHTML = ''; return; }
 
@@ -895,7 +920,8 @@ function renderAdminInvitees() {
           <td>
             <button class="btn btn-secondary btn-sm" onclick="copyRsvpLink('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">📋 Copia link</button>
           </td>
-          <td>
+          <td style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="editInvitee('${inv.id}')">✏️</button>
             <button class="btn btn-danger btn-sm" onclick="deleteInvitee('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">🗑️</button>
           </td>
         </tr>`).join('')}
@@ -913,6 +939,8 @@ function copyRsvpLink(inviteeId, name) {
 }
 
 function openModalInvitee() {
+  editingInviteeId = null;
+  document.getElementById('modal-invitee-title').textContent = 'Nuovo Invitato';
   document.getElementById('inv-name').value = '';
   document.getElementById('inv-email').value = '';
   document.getElementById('inv-whatsapp').value = '';
@@ -920,16 +948,33 @@ function openModalInvitee() {
   document.getElementById('modal-invitee').classList.remove('hidden');
 }
 
+function editInvitee(id) {
+  const inv = allInvitees.find(i => i.id === id);
+  if (!inv) return;
+  editingInviteeId = id;
+  document.getElementById('modal-invitee-title').textContent = 'Modifica Invitato';
+  document.getElementById('inv-name').value = inv.name || '';
+  document.getElementById('inv-email').value = inv.email || '';
+  document.getElementById('inv-whatsapp').value = inv.whatsapp || '';
+  document.getElementById('inv-notes').value = inv.notes || '';
+  document.getElementById('modal-invitee').classList.remove('hidden');
+}
+
 async function saveInvitee() {
   const name = document.getElementById('inv-name').value.trim();
   if (!name) { alert('Il nome è obbligatorio'); return; }
+  const payload = {
+    name,
+    email:    document.getElementById('inv-email').value.trim() || null,
+    whatsapp: document.getElementById('inv-whatsapp').value.trim() || null,
+    notes:    document.getElementById('inv-notes').value.trim() || null
+  };
   try {
-    await sb('invitees', 'POST', {
-      name,
-      email: document.getElementById('inv-email').value.trim() || null,
-      whatsapp: document.getElementById('inv-whatsapp').value.trim() || null,
-      notes: document.getElementById('inv-notes').value.trim() || null
-    });
+    if (editingInviteeId) {
+      await sb(`invitees?id=eq.${editingInviteeId}`, 'PATCH', payload);
+    } else {
+      await sb('invitees', 'POST', payload);
+    }
     await fetchAll();
     renderAdminInvitees();
     populateInviteeSelect();
@@ -999,7 +1044,7 @@ function switchTab(el) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById(el.dataset.panel).classList.add('active');
-  if (el.dataset.panel === 'panel-rsvp') loadMyRsvp();
+  if (el.dataset.panel === 'panel-rsvp') loadMyRsvp(lockedInviteeId);
 }
 
 function switchToPanel(panelId) {
@@ -1021,16 +1066,21 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 // ═══════════════════════════════════════════════════════
 // DEEP LINK (invitato pre-selezionato via ?invitee=UUID)
 // ═══════════════════════════════════════════════════════
+let lockedInviteeId = null; // UUID fisso se arrivato con link personale
+
 function checkDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const invId = params.get('invitee');
-  if (invId) {
-    const sel = document.getElementById('rsvp-invitee-select');
-    sel.value = invId;
-    if (sel.value === invId) {
-      switchToPanel('panel-rsvp');
-      loadMyRsvp();
-    }
+  if (invId && allInvitees.find(i => i.id === invId)) {
+    lockedInviteeId = invId;
+    // Mostra il tab "La mia risposta" e portaci subito
+    document.getElementById('tab-rsvp').style.display = '';
+    renderIdentityCard(lockedInviteeId);
+    loadMyRsvp(lockedInviteeId);
+    switchToPanel('panel-rsvp');
+  } else {
+    // Nessun link personale: tab nascosto, identity card normale
+    renderIdentityCard(null);
   }
 }
 
