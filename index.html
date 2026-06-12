@@ -313,6 +313,15 @@
 
 
 
+
+  /* RSVP MINI DASHBOARD */
+  .rsvp-mini-btn { padding:6px 14px; border-radius:6px; border:none; cursor:pointer; font-size:0.82rem; font-weight:700; transition:all 0.15s; min-width:130px; text-align:left; }
+  .rsvp-mini-btn:hover { filter:brightness(1.1); transform:scale(1.03); }
+  .rsvp-mini-yes { background:var(--yes); color:#fff; }
+  .rsvp-mini-no { background:var(--no); color:#fff; }
+  .rsvp-mini-maybe { background:var(--maybe); color:#fff; }
+  .rsvp-mini-pending { background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
+
   /* DASHBOARD MATRIX */
   .dash-wrap { overflow-x:auto; }
   .dash-table { border-collapse:collapse; font-size:0.78rem; min-width:100%; }
@@ -345,6 +354,15 @@
   .arb-reset:hover { opacity:0.8; }
 
 
+
+
+  /* RSVP MINI DASHBOARD */
+  .rsvp-mini-btn { padding:6px 14px; border-radius:6px; border:none; cursor:pointer; font-size:0.82rem; font-weight:700; transition:all 0.15s; min-width:130px; text-align:left; }
+  .rsvp-mini-btn:hover { filter:brightness(1.1); transform:scale(1.03); }
+  .rsvp-mini-yes { background:var(--yes); color:#fff; }
+  .rsvp-mini-no { background:var(--no); color:#fff; }
+  .rsvp-mini-maybe { background:var(--maybe); color:#fff; }
+  .rsvp-mini-pending { background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
 
   /* DASHBOARD MATRIX */
   .dash-wrap { overflow-x:auto; }
@@ -1307,40 +1325,88 @@ function loadMyRsvp(forcedId) {
     return;
   }
 
-  container.innerHTML = myEvents.map(ev => {
+  const inv = allInvitees.find(i => i.id === inviteeId);
+  const invName = inv ? inv.name : '';
+
+  // Mini dashboard a matrice: ogni data = una riga, un pulsante che cicla
+  const rows = myEvents.map(ev => {
     const rsvp = myRsvp.find(r => r.event_id === ev.id);
     const current = rsvp ? rsvp.status : 'pending';
-    return `
-    <div class="card">
-      <div class="event-header">
-        <div class="event-date-box">
-          <div class="day">${fmtDay(ev.event_date)}</div>
-          <div class="month">${fmtMonth(ev.event_date)}</div>
-          <div class="year">${fmtYear(ev.event_date)}</div>
-        </div>
-        <div class="event-info">
-          <h3>${ev.title}</h3>
-          <div class="event-meta">
-            ${ev.event_time ? `<span>🕐 ${ev.event_time.substring(0,5)}</span>` : ''}
-            ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
-          </div>
-        </div>
-      </div>
-      <div class="rsvp-form-section">
-        <h4>La tua risposta:</h4>
-        <div class="rsvp-buttons" id="rsvp-btns-${ev.id}">
-          <button class="rsvp-btn rsvp-btn-yes ${current==='yes'?'selected':''}"
-            onclick="submitRsvp('${ev.id}','${inviteeId}','yes',this)">✅ Sì, ci sarò</button>
-          <button class="rsvp-btn rsvp-btn-maybe ${current==='maybe'?'selected':''}"
-            onclick="submitRsvp('${ev.id}','${inviteeId}','maybe',this)">🤔 Forse</button>
-          <button class="rsvp-btn rsvp-btn-no ${current==='no'?'selected':''}"
-            onclick="submitRsvp('${ev.id}','${inviteeId}','no',this)">❌ Non posso</button>
-        </div>
-        <div id="rsvp-msg-${ev.id}" style="margin-top:8px;font-size:0.8rem"></div>
-      </div>
-    </div>`;
+    const labels  = { yes:'✓ Sì, ci sarò', no:'✗ Non posso', maybe:'? Forse', pending:'· In attesa' };
+    const classes = { yes:'rsvp-mini-yes', no:'rsvp-mini-no', maybe:'rsvp-mini-maybe', pending:'rsvp-mini-pending' };
+    const d = new Date(ev.event_date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('it-IT', { weekday:'short', day:'numeric', month:'short' });
+    return `<tr>
+      <td style="padding:6px 10px;font-weight:600;font-size:0.88rem;white-space:nowrap">${dateStr}</td>
+      <td style="padding:6px 8px;font-size:0.78rem;color:var(--text2)">${ev.location || ''}</td>
+      <td style="padding:6px 8px">
+        <button class="rsvp-mini-btn ${classes[current]}"
+          onclick="rsvpCycle('${ev.id}','${inviteeId}','${current}',this)">
+          ${labels[current]}
+        </button>
+      </td>
+      <td style="padding:6px 4px">
+        <div id="rsvp-mini-msg-${ev.id}" style="font-size:0.72rem;color:var(--text2);width:40px"></div>
+      </td>
+    </tr>`;
   }).join('');
+
+  container.innerHTML = `
+    <div class="card" style="margin-bottom:16px;background:var(--accent-light);border-color:#95d5b2">
+      <div style="font-size:0.82rem;color:var(--yes);font-weight:600">
+        💡 Clicca il pulsante per cambiare la tua risposta — cicla automaticamente tra le opzioni
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--surface2)">
+            <th style="padding:8px 10px;text-align:left;font-size:0.8rem;border-bottom:2px solid var(--border)">Data</th>
+            <th style="padding:8px 8px;text-align:left;font-size:0.8rem;border-bottom:2px solid var(--border)">Luogo</th>
+            <th style="padding:8px 8px;text-align:left;font-size:0.8rem;border-bottom:2px solid var(--border)">La tua risposta</th>
+            <th style="border-bottom:2px solid var(--border)"></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
+
+async function rsvpCycle(eventId, inviteeId, currentStatus, btn) {
+  const cycle = { yes:'no', no:'maybe', maybe:'pending', pending:'yes' };
+  const newStatus = cycle[currentStatus] || 'yes';
+  const labels  = { yes:'✓ Sì, ci sarò', no:'✗ Non posso', maybe:'? Forse', pending:'· In attesa' };
+  const classes = { yes:'rsvp-mini-yes', no:'rsvp-mini-no', maybe:'rsvp-mini-maybe', pending:'rsvp-mini-pending' };
+
+  // Aggiorna UI subito
+  btn.className = `rsvp-mini-btn ${classes[newStatus]}`;
+  btn.textContent = labels[newStatus];
+  btn.onclick = () => rsvpCycle(eventId, inviteeId, newStatus, btn);
+
+  const msg = document.getElementById(`rsvp-mini-msg-${eventId}`);
+  if (msg) msg.textContent = '...';
+
+  try {
+    const existing = allRsvp.find(r => r.event_id === eventId && r.invitee_id === inviteeId);
+    if (existing) {
+      await sb(`rsvp?event_id=eq.${eventId}&invitee_id=eq.${inviteeId}`, 'PATCH',
+        { status: newStatus, responded_at: new Date().toISOString() });
+      existing.status = newStatus;
+    } else {
+      const res = await sb('rsvp', 'POST',
+        { event_id: eventId, invitee_id: inviteeId, status: newStatus, responded_at: new Date().toISOString() });
+      allRsvp.push(res[0]);
+    }
+    if (msg) { msg.textContent = '✓'; setTimeout(()=>{ if(msg) msg.textContent=''; }, 1500); }
+    renderPublic();
+  } catch(e) {
+    if (msg) msg.textContent = '!';
+    btn.className = `rsvp-mini-btn ${classes[currentStatus]}`;
+    btn.textContent = labels[currentStatus];
+    btn.onclick = () => rsvpCycle(eventId, inviteeId, currentStatus, btn);
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════
 // UI HELPERS
