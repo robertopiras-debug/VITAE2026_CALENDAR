@@ -2,6 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<meta name="format-detection" content="telephone=no">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calendario Riunioni</title>
 <style>
@@ -438,7 +439,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v5</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v5b</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -834,7 +835,7 @@ function renderAdminInvitees() {
           <td><span style="font-size:0.75rem;font-weight:700;background:var(--accent);color:#fff;padding:2px 7px;border-radius:4px">${inv.delegazione || '—'}</span></td>
           <td><strong>${inv.name}</strong>${inv.whatsapp ? `<div style="font-size:0.75rem;margin-top:2px"><a href="https://wa.me/${inv.whatsapp.replace(/[^0-9]/g,'')}" target="_blank" style="color:#25D366;text-decoration:none;font-weight:600">📱 ${inv.whatsapp}</a></div>` : ""}</td>
           <td style="color:var(--text2)">${inv.email || '—'}</td>
-          <td style="color:var(--text2)">${inv.whatsapp || '—'}</td>
+          <td style="color:var(--text2)">${inv.whatsapp ? `<span style="user-select:text">${inv.whatsapp}</span>` : '—'}</td>
           <td style="color:var(--text2)">${inv.notes || '—'}</td>
           <td>
             <button class="btn btn-secondary btn-sm" onclick="copyRsvpLink('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">📋 Link</button>
