@@ -427,6 +427,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v2</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -446,9 +447,7 @@
 
   <!-- PANEL: LA MIA RISPOSTA -->
   <div id="panel-rsvp" class="panel">
-    <div class="card" style="margin-bottom:20px" id="identity-card">
-      <!-- popolato da renderIdentityCard() -->
-    </div>
+    <div class="card" style="margin-bottom:20px" id="identity-card"></div>
     <div id="rsvp-events-list"></div>
   </div>
 
@@ -491,7 +490,6 @@ let allEvents = [];
 let allInvitees = [];
 let allRsvp = [];
 let editingEventId = null;
-let editingInviteeId = null;
 let selectedAssignees = new Set();
 
 // ═══════════════════════════════════════════════════════
@@ -634,94 +632,6 @@ function toggleSection(el) {
 }
 
 // ═══════════════════════════════════════════════════════
-// RENDER RSVP (vista invitato)
-// ═══════════════════════════════════════════════════════
-function populateInviteeSelect() {
-  const sel = document.getElementById('rsvp-invitee-select');
-  sel.innerHTML = '<option value="">— Seleziona il tuo nome —</option>' +
-    allInvitees.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
-}
-
-// Aggiorna la card di identificazione in base al contesto:
-// - con deep link: mostra solo il nome bloccato, niente menu
-// - senza deep link: mostra il menu a tendina normale
-function renderIdentityCard(lockedInviteeId) {
-  const card = document.getElementById('identity-card');
-  if (lockedInviteeId) {
-    const inv = allInvitees.find(i => i.id === lockedInviteeId);
-    const name = inv ? inv.name : '—';
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:1.5rem">👤</div>
-        <div>
-          <div style="font-weight:700;font-size:1rem">${name}</div>
-          <div style="font-size:0.78rem;color:var(--text2)">Stai rispondendo con il tuo link personale.</div>
-        </div>
-      </div>`;
-  } else {
-    card.innerHTML = `
-      <div class="invitee-selector">
-        <label>Chi sei?</label>
-        <select id="rsvp-invitee-select" onchange="loadMyRsvp()">
-          <option value="">— Seleziona il tuo nome —</option>
-        </select>
-      </div>
-      <div style="font-size:0.78rem;color:var(--text2)">Seleziona il tuo nome per vedere le riunioni e rispondere.</div>`;
-    populateInviteeSelect();
-  }
-}
-
-function loadMyRsvp(forcedInviteeId) {
-  const inviteeId = forcedInviteeId ||
-    (document.getElementById('rsvp-invitee-select') ? document.getElementById('rsvp-invitee-select').value : '');
-  const container = document.getElementById('rsvp-events-list');
-  if (!inviteeId) { container.innerHTML = ''; return; }
-
-  // Solo eventi a cui l'invitato è assegnato
-  const myRsvp = allRsvp.filter(r => r.invitee_id === inviteeId);
-  const myEventIds = myRsvp.map(r => r.event_id);
-  const myEvents = allEvents.filter(ev => myEventIds.includes(ev.id));
-
-  if (!myEvents.length) {
-    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>Non sei invitato a nessuna riunione ancora.</p></div>`;
-    return;
-  }
-
-  container.innerHTML = myEvents.map(ev => {
-    const rsvp = myRsvp.find(r => r.event_id === ev.id);
-    const current = rsvp ? rsvp.status : 'pending';
-    return `
-    <div class="card">
-      <div class="event-header">
-        <div class="event-date-box">
-          <div class="day">${fmtDay(ev.event_date)}</div>
-          <div class="month">${fmtMonth(ev.event_date)}</div>
-          <div class="year">${fmtYear(ev.event_date)}</div>
-        </div>
-        <div class="event-info">
-          <h3>${ev.title}</h3>
-          <div class="event-meta">
-            ${ev.event_time ? `<span>🕐 ${ev.event_time.substring(0,5)}</span>` : ''}
-            ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
-          </div>
-        </div>
-      </div>
-      <div class="rsvp-form-section">
-        <h4>La tua risposta:</h4>
-        <div class="rsvp-buttons" id="rsvp-btns-${ev.id}">
-          <button class="rsvp-btn rsvp-btn-yes ${current==='yes'?'selected':''}"
-            onclick="submitRsvp('${ev.id}','${inviteeId}','yes',this)">✅ Sì, ci sarò</button>
-          <button class="rsvp-btn rsvp-btn-maybe ${current==='maybe'?'selected':''}"
-            onclick="submitRsvp('${ev.id}','${inviteeId}','maybe',this)">🤔 Forse</button>
-          <button class="rsvp-btn rsvp-btn-no ${current==='no'?'selected':''}"
-            onclick="submitRsvp('${ev.id}','${inviteeId}','no',this)">❌ Non posso</button>
-        </div>
-        <div id="rsvp-msg-${ev.id}" style="margin-top:8px;font-size:0.8rem"></div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
 async function submitRsvp(eventId, inviteeId, status, btn) {
   const container = btn.closest('.rsvp-buttons');
   container.querySelectorAll('.rsvp-btn').forEach(b => b.classList.remove('selected'));
@@ -733,16 +643,12 @@ async function submitRsvp(eventId, inviteeId, status, btn) {
   try {
     const existing = allRsvp.find(r => r.event_id === eventId && r.invitee_id === inviteeId);
     if (existing) {
-      // Record esiste → PATCH
       await sb(`rsvp?event_id=eq.${eventId}&invitee_id=eq.${inviteeId}`, 'PATCH',
-        { status, responded_at: new Date().toISOString() }
-      );
+        { status, responded_at: new Date().toISOString() });
       existing.status = status;
     } else {
-      // Record non esiste → POST
       const res = await sb('rsvp', 'POST',
-        { event_id: eventId, invitee_id: inviteeId, status, responded_at: new Date().toISOString() }
-      );
+        { event_id: eventId, invitee_id: inviteeId, status, responded_at: new Date().toISOString() });
       allRsvp.push(res[0]);
     }
 
@@ -918,9 +824,9 @@ function renderAdminInvitees() {
           <td style="color:var(--text2)">${inv.whatsapp || '—'}</td>
           <td style="color:var(--text2)">${inv.notes || '—'}</td>
           <td>
-            <button class="btn btn-secondary btn-sm" onclick="copyRsvpLink('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">📋 Copia link</button>
+            <button class="btn btn-secondary btn-sm" onclick="copyRsvpLink('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">📋 Link</button>
           </td>
-          <td style="display:flex;gap:6px">
+          <td style="display:flex;gap:5px">
             <button class="btn btn-secondary btn-sm" onclick="editInvitee('${inv.id}')">✏️</button>
             <button class="btn btn-danger btn-sm" onclick="deleteInvitee('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">🗑️</button>
           </td>
@@ -937,6 +843,8 @@ function copyRsvpLink(inviteeId, name) {
     prompt(`Link per ${name}:`, url);
   });
 }
+
+let editingInviteeId = null;
 
 function openModalInvitee() {
   editingInviteeId = null;
@@ -1037,6 +945,95 @@ document.getElementById('admin-password').addEventListener('keydown', e => {
 });
 
 // ═══════════════════════════════════════════════════════
+// RENDER RSVP — identity card
+// ═══════════════════════════════════════════════════════
+let lockedInviteeId = null;
+
+function renderIdentityCard(lockedId) {
+  const card = document.getElementById('identity-card');
+  if (!card) return;
+  if (lockedId) {
+    const inv = allInvitees.find(i => i.id === lockedId);
+    const name = inv ? inv.name : '—';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:1.5rem">👤</div>
+        <div>
+          <div style="font-weight:700;font-size:1rem">${name}</div>
+          <div style="font-size:0.78rem;color:var(--text2)">Stai rispondendo con il tuo link personale.</div>
+        </div>
+      </div>`;
+  } else {
+    card.innerHTML = `
+      <div class="invitee-selector">
+        <label>Chi sei?</label>
+        <select id="rsvp-invitee-select" onchange="loadMyRsvp()">
+          <option value="">— Seleziona il tuo nome —</option>
+        </select>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text2)">Seleziona il tuo nome per vedere le riunioni e rispondere.</div>`;
+    populateInviteeSelect();
+  }
+}
+
+function populateInviteeSelect() {
+  const sel = document.getElementById('rsvp-invitee-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Seleziona il tuo nome —</option>' +
+    allInvitees.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+}
+
+function loadMyRsvp(forcedId) {
+  const inviteeId = forcedId ||
+    (document.getElementById('rsvp-invitee-select') ? document.getElementById('rsvp-invitee-select').value : '');
+  const container = document.getElementById('rsvp-events-list');
+  if (!inviteeId) { container.innerHTML = ''; return; }
+
+  const myRsvp = allRsvp.filter(r => r.invitee_id === inviteeId);
+  const myEventIds = myRsvp.map(r => r.event_id);
+  const myEvents = allEvents.filter(ev => myEventIds.includes(ev.id));
+
+  if (!myEvents.length) {
+    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>Non sei invitato a nessuna riunione ancora.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = myEvents.map(ev => {
+    const rsvp = myRsvp.find(r => r.event_id === ev.id);
+    const current = rsvp ? rsvp.status : 'pending';
+    return `
+    <div class="card">
+      <div class="event-header">
+        <div class="event-date-box">
+          <div class="day">${fmtDay(ev.event_date)}</div>
+          <div class="month">${fmtMonth(ev.event_date)}</div>
+          <div class="year">${fmtYear(ev.event_date)}</div>
+        </div>
+        <div class="event-info">
+          <h3>${ev.title}</h3>
+          <div class="event-meta">
+            ${ev.event_time ? `<span>🕐 ${ev.event_time.substring(0,5)}</span>` : ''}
+            ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="rsvp-form-section">
+        <h4>La tua risposta:</h4>
+        <div class="rsvp-buttons" id="rsvp-btns-${ev.id}">
+          <button class="rsvp-btn rsvp-btn-yes ${current==='yes'?'selected':''}"
+            onclick="submitRsvp('${ev.id}','${inviteeId}','yes',this)">✅ Sì, ci sarò</button>
+          <button class="rsvp-btn rsvp-btn-maybe ${current==='maybe'?'selected':''}"
+            onclick="submitRsvp('${ev.id}','${inviteeId}','maybe',this)">🤔 Forse</button>
+          <button class="rsvp-btn rsvp-btn-no ${current==='no'?'selected':''}"
+            onclick="submitRsvp('${ev.id}','${inviteeId}','no',this)">❌ Non posso</button>
+        </div>
+        <div id="rsvp-msg-${ev.id}" style="margin-top:8px;font-size:0.8rem"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
 // UI HELPERS
 // ═══════════════════════════════════════════════════════
 function switchTab(el) {
@@ -1064,22 +1061,18 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 });
 
 // ═══════════════════════════════════════════════════════
-// DEEP LINK (invitato pre-selezionato via ?invitee=UUID)
+// DEEP LINK (?invitee=UUID)
 // ═══════════════════════════════════════════════════════
-let lockedInviteeId = null; // UUID fisso se arrivato con link personale
-
 function checkDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const invId = params.get('invitee');
   if (invId && allInvitees.find(i => i.id === invId)) {
     lockedInviteeId = invId;
-    // Mostra il tab "La mia risposta" e portaci subito
     document.getElementById('tab-rsvp').style.display = '';
     renderIdentityCard(lockedInviteeId);
     loadMyRsvp(lockedInviteeId);
     switchToPanel('panel-rsvp');
   } else {
-    // Nessun link personale: tab nascosto, identity card normale
     renderIdentityCard(null);
   }
 }
@@ -1091,7 +1084,6 @@ function checkDeepLink() {
   try {
     await fetchAll();
     renderPublic();
-    populateInviteeSelect();
     checkDeepLink();
   } catch(e) {
     document.getElementById('public-events-list').innerHTML =
