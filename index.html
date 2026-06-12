@@ -504,7 +504,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v10</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v11</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -754,55 +754,74 @@ function renderAdminEvents() {
   }
   container.innerHTML = allEvents.map(ev => {
     const invitees = getInviteesForEvent(ev.id);
+    const yes     = invitees.filter(i=>i.status==='yes').length;
+    const no      = invitees.filter(i=>i.status==='no').length;
+    const maybe   = invitees.filter(i=>i.status==='maybe').length;
+    const pending = invitees.filter(i=>i.status==='pending').length;
+    const total   = invitees.length;
+    const pctYes  = total ? (yes/total)*100 : 0;
+    const pctNo   = total ? (no/total)*100 : 0;
+    const pctMaybe= total ? (maybe/total)*100 : 0;
+    const pctPend = total ? (pending/total)*100 : 0;
+
     return `
-    <div class="card" style="margin-bottom:12px">
+    <div class="card" style="margin-bottom:16px">
       <div style="display:flex;align-items:flex-start;gap:12px;justify-content:space-between">
-        <div>
-          <strong>${ev.title}</strong>
-          <div class="event-meta" style="margin-top:4px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <strong style="font-size:1rem">${ev.title}</strong>
+          </div>
+          <div class="event-meta" style="margin-top:6px">
             <span>📅 ${fmtDate(ev.event_date)}</span>
             ${ev.event_time ? `<span>🕐 ${ev.event_time.substring(0,5)}</span>` : ''}
             ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
           </div>
-          ${ev.description ? `<div style="font-size:0.8rem;color:var(--text2);margin-top:4px">${ev.description}</div>` : ''}
-          <div style="margin-top:8px;font-size:0.8rem;color:var(--text2)">
-            Invitati: ${invitees.length} |
-            Sì: ${invitees.filter(i=>i.status==='yes').length} |
-            No: ${invitees.filter(i=>i.status==='no').length} |
-            Forse: ${invitees.filter(i=>i.status==='maybe').length} |
-            In attesa: ${invitees.filter(i=>i.status==='pending').length}
+          <!-- Totali con barra -->
+          <div style="margin-top:10px">
+            <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.82rem;margin-bottom:5px">
+              <span style="color:var(--yes);font-weight:700">✓ Sì: ${yes}</span>
+              <span style="color:var(--no);font-weight:700">✗ No: ${no}</span>
+              <span style="color:var(--maybe);font-weight:700">? Forse: ${maybe}</span>
+              <span style="color:var(--pending);font-weight:600">· In attesa: ${pending}</span>
+              <span style="color:var(--text2)">Totale: ${total}</span>
+            </div>
+            <div class="rsvp-bar">
+              <div class="rsvp-bar-yes" style="width:${pctYes}%"></div>
+              <div class="rsvp-bar-no" style="width:${pctNo}%"></div>
+              <div class="rsvp-bar-maybe" style="width:${pctMaybe}%"></div>
+              <div class="rsvp-bar-pending" style="width:${pctPend}%"></div>
+            </div>
+          </div>
+          <!-- Resoconto -->
+          <div style="margin-top:12px">
+            <label style="font-size:0.78rem;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">📝 Resoconto / Note</label>
+            <textarea id="resoconto-${ev.id}" rows="4"
+              style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:0.88rem;font-family:inherit;resize:vertical;background:var(--surface)"
+              placeholder="Inserisci note, resoconto della seduta, osservazioni..."
+              onblur="saveResoconto('${ev.id}',this.value)">${ev.resoconto || ''}</textarea>
+            <div id="resoconto-msg-${ev.id}" style="font-size:0.75rem;color:var(--text2);margin-top:2px;height:16px"></div>
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn btn-secondary btn-sm" onclick="openModalEvent('${ev.id}')">✏️ Modifica</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}','${ev.title.replace(/'/g,"\\'")}')">🗑️</button>
-        </div>
-      </div>
-      <div class="toggle-section" onclick="toggleSection(this)" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-        <span style="font-size:0.8rem;font-weight:600;color:var(--text2)">
-          <span class="toggle-icon">▼</span> Gestisci risposte invitati
-        </span>
-      </div>
-      <div class="toggleable-content hidden">
-        <div class="admin-rsvp-grid">
-          ${getInviteesForEvent(ev.id).map(inv => `
-            <div class="admin-rsvp-row">
-              <span class="admin-rsvp-name">${inv.name}</span>
-              <div class="admin-rsvp-btns">
-                <button class="arb arb-yes ${inv.status==='yes'?'active':''}" title="Sì"
-                  onclick="adminSetRsvp('${ev.id}','${inv.id}','yes',this)">✓</button>
-                <button class="arb arb-maybe ${inv.status==='maybe'?'active':''}" title="Forse"
-                  onclick="adminSetRsvp('${ev.id}','${inv.id}','maybe',this)">?</button>
-                <button class="arb arb-no ${inv.status==='no'?'active':''}" title="No"
-                  onclick="adminSetRsvp('${ev.id}','${inv.id}','no',this)">✗</button>
-                <button class="arb arb-reset" title="Reset a In attesa"
-                  onclick="adminSetRsvp('${ev.id}','${inv.id}','pending',this)">↺</button>
-              </div>
-            </div>`).join('')}
+          <button class="btn btn-secondary btn-sm" onclick="openModalEvent('${ev.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}','${ev.title.replace(/'/g,"\'")}')">🗑️</button>
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+async function saveResoconto(eventId, text) {
+  const msg = document.getElementById(`resoconto-msg-${eventId}`);
+  if (msg) msg.textContent = 'Salvataggio...';
+  try {
+    await sb(`events?id=eq.${eventId}`, 'PATCH', { resoconto: text || null, updated_at: new Date().toISOString() });
+    const ev = allEvents.find(e => e.id === eventId);
+    if (ev) ev.resoconto = text || null;
+    if (msg) { msg.textContent = '✓ Salvato'; setTimeout(()=>{ if(msg) msg.textContent=''; }, 2000); }
+  } catch(e) {
+    if (msg) msg.textContent = 'Errore: ' + e.message;
+  }
 }
 
 function openModalEvent(eventId = null) {
@@ -855,6 +874,7 @@ async function saveEvent() {
     event_date: date,
     event_time: document.getElementById('ev-time').value || null,
     location: document.getElementById('ev-location').value.trim() || null,
+    resoconto: document.getElementById(`resoconto-${editingEventId || 'new'}`)?document.getElementById(`resoconto-${editingEventId || 'new'}`).value||null:null,
     updated_at: new Date().toISOString()
   };
 
