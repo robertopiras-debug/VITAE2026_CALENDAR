@@ -504,7 +504,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v12</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v13</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -991,11 +991,14 @@ function renderAdminDashboard() {
           title="${inv.name} — ${ev.title}">${labels[status] || ''}</button></td>`;
       }).join('');
 
-      // Nome con link WhatsApp se presente
+      // Nome con link WhatsApp e link RSVP
       const waLink = inv.whatsapp
         ? ` <a href="https://web.whatsapp.com/send?phone=${inv.whatsapp.replace(/[^0-9]/g,'')}" target="_blank"
             style="color:#25D366;font-size:0.75rem;text-decoration:none" title="${inv.whatsapp}">📱</a>`
         : '';
+      const rsvpUrl = window.location.href.split('?')[0] + '?invitee=' + inv.id;
+      const rsvpLink = ` <a href="${rsvpUrl}" target="_blank"
+          style="color:var(--accent);font-size:0.72rem;text-decoration:none;opacity:0.7" title="Link RSVP personale">🔗</a>`;
 
       // Note se presenti
       const noteSpan = inv.notes
@@ -1006,7 +1009,7 @@ function renderAdminDashboard() {
 
       rows += `<tr>
         <td class="name-col">
-          <div style="display:flex;align-items:center;gap:4px">${inv.name}${waLink}</div>
+          <div style="display:flex;align-items:center;gap:4px">${inv.name}${waLink}${rsvpLink}</div>
           ${noteSpan}
         </td>
         <td class="del-col" style="text-align:center">${delBadge}</td>
