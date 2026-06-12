@@ -413,6 +413,17 @@
       <input type="text" id="inv-whatsapp" placeholder="+39 333 1234567" />
     </div>
     <div class="form-group">
+      <label>Delegazione</label>
+      <select id="inv-delegazione">
+        <option value="">— Seleziona —</option>
+        <option value="CA">CA - Cagliari</option>
+        <option value="SS">SS - Sassari</option>
+        <option value="NU">NU - Nuoro</option>
+        <option value="OR">OR - Oristano</option>
+        <option value="GA">GA - Gallura</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label>Note</label>
       <input type="text" id="inv-notes" placeholder="Note opzionali" />
     </div>
@@ -427,7 +438,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v3</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v4</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -517,7 +528,7 @@ async function sb(path, method = 'GET', body = null, extra = {}) {
 async function fetchAll() {
   [allEvents, allInvitees, allRsvp] = await Promise.all([
     sb('events?select=*&order=event_date.asc'),
-    sb('invitees?select=*&order=name.asc'),
+    sb('invitees?select=*&order=delegazione.asc,name.asc'),
     sb('rsvp?select=*')
   ]);
 }
@@ -808,6 +819,7 @@ function renderAdminInvitees() {
   <table>
     <thead>
       <tr>
+        <th>Del.</th>
         <th>Nome</th>
         <th>Email</th>
         <th>WhatsApp</th>
@@ -819,6 +831,7 @@ function renderAdminInvitees() {
     <tbody>
       ${allInvitees.map(inv => `
         <tr>
+          <td><span style="font-size:0.75rem;font-weight:700;background:var(--accent);color:#fff;padding:2px 7px;border-radius:4px">${inv.delegazione || '—'}</span></td>
           <td><strong>${inv.name}</strong>${inv.whatsapp ? `<div style="font-size:0.75rem;color:var(--text2);margin-top:2px">📱 ${inv.whatsapp}</div>` : ""}</td>
           <td style="color:var(--text2)">${inv.email || '—'}</td>
           <td style="color:var(--text2)">${inv.whatsapp || '—'}</td>
@@ -852,6 +865,7 @@ function openModalInvitee() {
   document.getElementById('inv-name').value = '';
   document.getElementById('inv-email').value = '';
   document.getElementById('inv-whatsapp').value = '';
+  document.getElementById('inv-delegazione').value = '';
   document.getElementById('inv-notes').value = '';
   document.getElementById('modal-invitee').classList.remove('hidden');
 }
@@ -864,6 +878,7 @@ function editInvitee(id) {
   document.getElementById('inv-name').value = inv.name || '';
   document.getElementById('inv-email').value = inv.email || '';
   document.getElementById('inv-whatsapp').value = inv.whatsapp || '';
+  document.getElementById('inv-delegazione').value = inv.delegazione || '';
   document.getElementById('inv-notes').value = inv.notes || '';
   document.getElementById('modal-invitee').classList.remove('hidden');
 }
@@ -874,8 +889,9 @@ async function saveInvitee() {
   const payload = {
     name,
     email:    document.getElementById('inv-email').value.trim() || null,
-    whatsapp: document.getElementById('inv-whatsapp').value.trim() || null,
-    notes:    document.getElementById('inv-notes').value.trim() || null
+    whatsapp:    document.getElementById('inv-whatsapp').value.trim() || null,
+    delegazione: document.getElementById('inv-delegazione').value || null,
+    notes:       document.getElementById('inv-notes').value.trim() || null
   };
   try {
     if (editingInviteeId) {
