@@ -504,7 +504,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v11</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v12</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -515,7 +515,7 @@
     <div class="tab" id="tab-rsvp" data-panel="panel-rsvp" onclick="switchTab(this)" style="display:none">✅ La mia risposta</div>
     <div class="tab admin-tab" data-panel="panel-admin-events" onclick="switchTab(this)" style="display:none">🗓️ Gestione Riunioni</div>
     <div class="tab admin-tab" data-panel="panel-admin-invitees" onclick="switchTab(this)" style="display:none">👥 Gestione Invitati</div>
-    <div class="tab admin-tab" data-panel="panel-admin-dashboard" onclick="switchTab(this)" style="display:none">📊 Dashboard</div>
+    <div class="tab admin-tab" data-panel="panel-admin-dashboard" onclick="switchTab(this)" style="display:none">📊 Dashboard Riunioni</div>
   </div>
 
   <!-- PANEL: RIUNIONI PUBBLICO -->
@@ -540,7 +540,7 @@
 
   <!-- PANEL: ADMIN DASHBOARD -->
   <div id="panel-admin-dashboard" class="panel">
-    <div class="section-title">Dashboard disponibilità</div>
+    <div class="section-title">Dashboard Riunioni</div>
     <div id="admin-dashboard-container"><div class="loading">Caricamento...</div></div>
   </div>
 
@@ -968,40 +968,63 @@ function renderAdminDashboard() {
     return `<th title="${ev.title}">${d.getDate()}/${d.getMonth()+1}</th>`;
   }).join('');
 
-  // Riga per ogni invitato
-  const rows = allInvitees.map(inv => {
-    const cells = allEvents.map(ev => {
-      const rsvp = allRsvp.find(r => r.event_id === ev.id && r.invitee_id === inv.id);
-      const status = rsvp ? rsvp.status : 'none';
-      const labels = { yes:'✓', no:'✗', maybe:'?', pending:'·', none:'' };
-      const cls = status === 'none' ? 'dash-cell-pending' : `dash-cell-${status}`;
-      const nextStatus = { yes:'no', no:'maybe', maybe:'pending', pending:'yes', none:'yes' };
-      return `<td><button class="dash-cell ${cls}" 
-        onclick="dashCycle('${ev.id}','${inv.id}','${status}',this)"
-        title="${inv.name} — ${ev.title}">${labels[status] || ''}</button></td>`;
-    }).join('');
+  // Raggruppa invitati per delegazione (ordinati come arrivano — già ordinati del→cognome)
+  const delegazioni = [...new Set(allInvitees.map(i => i.delegazione || '—'))];
 
-    const delBadge = inv.delegazione 
-      ? `<span style="font-size:0.7rem;font-weight:700;background:var(--accent);color:#fff;padding:1px 6px;border-radius:3px">${inv.delegazione}</span>`
-      : '—';
+  let rows = '';
+  delegazioni.forEach((del, dIdx) => {
+    const gruppo = allInvitees.filter(i => (i.delegazione || '—') === del);
 
-    return `<tr>
-      <td class="name-col">${inv.name}</td>
-      <td class="del-col" style="text-align:center">${delBadge}</td>
-      ${cells}
-    </tr>`;
-  }).join('');
+    // Riga separatore delegazione (eccetto prima)
+    if (dIdx > 0) {
+      rows += `<tr><td colspan="${allEvents.length + 2}" style="height:10px;background:var(--bg);border:none"></td></tr>`;
+    }
 
-  // Riga totali Sì per ogni data
+    gruppo.forEach(inv => {
+      const cells = allEvents.map(ev => {
+        const rsvp = allRsvp.find(r => r.event_id === ev.id && r.invitee_id === inv.id);
+        const status = rsvp ? rsvp.status : 'none';
+        const labels = { yes:'✓', no:'✗', maybe:'?', pending:'·', none:'' };
+        const cls = status === 'none' ? 'dash-cell-pending' : `dash-cell-${status}`;
+        return `<td><button class="dash-cell ${cls}"
+          onclick="dashCycle('${ev.id}','${inv.id}','${status}',this)"
+          title="${inv.name} — ${ev.title}">${labels[status] || ''}</button></td>`;
+      }).join('');
+
+      // Nome con link WhatsApp se presente
+      const waLink = inv.whatsapp
+        ? ` <a href="https://web.whatsapp.com/send?phone=${inv.whatsapp.replace(/[^0-9]/g,'')}" target="_blank"
+            style="color:#25D366;font-size:0.75rem;text-decoration:none" title="${inv.whatsapp}">📱</a>`
+        : '';
+
+      // Note se presenti
+      const noteSpan = inv.notes
+        ? `<div style="font-size:0.7rem;color:var(--text2);margin-top:1px;font-style:italic">${inv.notes}</div>`
+        : '';
+
+      const delBadge = `<span style="font-size:0.68rem;font-weight:700;background:var(--accent);color:#fff;padding:1px 5px;border-radius:3px">${del}</span>`;
+
+      rows += `<tr>
+        <td class="name-col">
+          <div style="display:flex;align-items:center;gap:4px">${inv.name}${waLink}</div>
+          ${noteSpan}
+        </td>
+        <td class="del-col" style="text-align:center">${delBadge}</td>
+        ${cells}
+      </tr>`;
+    });
+  });
+
+  // Riga totali
   const totals = allEvents.map(ev => {
-    const yes = allRsvp.filter(r => r.event_id === ev.id && r.status === 'yes').length;
+    const yes   = allRsvp.filter(r => r.event_id === ev.id && r.status === 'yes').length;
     const maybe = allRsvp.filter(r => r.event_id === ev.id && r.status === 'maybe').length;
     return `<td style="font-size:0.75rem"><span style="color:var(--yes);font-weight:700">${yes}</span><span style="color:var(--text2)">+${maybe}</span></td>`;
   }).join('');
 
   container.innerHTML = `
     <div style="font-size:0.78rem;color:var(--text2);margin-bottom:8px">
-      Clicca una cella per cambiare la risposta: ✓ Sì → ✗ No → ? Forse → · In attesa → ricomincia
+      Clicca una cella per cambiare risposta: ✓ Sì → ✗ No → ? Forse → · In attesa → ricomincia
     </div>
     <div class="dash-wrap">
       <table class="dash-table">
