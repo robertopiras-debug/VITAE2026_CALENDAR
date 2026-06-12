@@ -438,7 +438,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v4</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v5</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -832,7 +832,7 @@ function renderAdminInvitees() {
       ${allInvitees.map(inv => `
         <tr>
           <td><span style="font-size:0.75rem;font-weight:700;background:var(--accent);color:#fff;padding:2px 7px;border-radius:4px">${inv.delegazione || '—'}</span></td>
-          <td><strong>${inv.name}</strong>${inv.whatsapp ? `<div style="font-size:0.75rem;color:var(--text2);margin-top:2px">📱 ${inv.whatsapp}</div>` : ""}</td>
+          <td><strong>${inv.name}</strong>${inv.whatsapp ? `<div style="font-size:0.75rem;margin-top:2px"><a href="https://wa.me/${inv.whatsapp.replace(/[^0-9]/g,'')}" target="_blank" style="color:#25D366;text-decoration:none;font-weight:600">📱 ${inv.whatsapp}</a></div>` : ""}</td>
           <td style="color:var(--text2)">${inv.email || '—'}</td>
           <td style="color:var(--text2)">${inv.whatsapp || '—'}</td>
           <td style="color:var(--text2)">${inv.notes || '—'}</td>
