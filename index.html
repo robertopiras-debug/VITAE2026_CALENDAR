@@ -427,7 +427,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v2</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v3</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -819,7 +819,7 @@ function renderAdminInvitees() {
     <tbody>
       ${allInvitees.map(inv => `
         <tr>
-          <td><strong>${inv.name}</strong></td>
+          <td><strong>${inv.name}</strong>${inv.whatsapp ? `<div style="font-size:0.75rem;color:var(--text2);margin-top:2px">📱 ${inv.whatsapp}</div>` : ""}</td>
           <td style="color:var(--text2)">${inv.email || '—'}</td>
           <td style="color:var(--text2)">${inv.whatsapp || '—'}</td>
           <td style="color:var(--text2)">${inv.notes || '—'}</td>
