@@ -306,6 +306,35 @@
   .empty { text-align: center; padding: 48px 20px; color: var(--text2); }
   .empty .icon { font-size: 2.5rem; margin-bottom: 12px; }
 
+
+  /* ADMIN RSVP OVERRIDE */
+  .admin-rsvp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:6px; margin-top:10px; }
+  .admin-rsvp-row { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:7px; background:var(--surface2); border:1px solid var(--border); font-size:0.8rem; }
+  .admin-rsvp-name { flex:1; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .admin-rsvp-btns { display:flex; gap:3px; flex-shrink:0; }
+  .arb { width:26px; height:26px; border-radius:5px; border:none; cursor:pointer; font-size:0.75rem; opacity:0.5; transition:all 0.15s; }
+  .arb:hover { opacity:1; transform:scale(1.1); }
+  .arb.active { opacity:1; outline:2px solid #333; outline-offset:1px; }
+  .arb-yes { background:var(--yes); color:#fff; }
+  .arb-maybe { background:var(--maybe); color:#fff; }
+  .arb-no { background:var(--no); color:#fff; }
+  .arb-reset { background:var(--pending); color:#fff; opacity:0.4; }
+  .arb-reset:hover { opacity:0.8; }
+
+
+  /* ADMIN RSVP OVERRIDE */
+  .admin-rsvp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:6px; margin-top:10px; }
+  .admin-rsvp-row { display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:7px; background:var(--surface2); border:1px solid var(--border); font-size:0.8rem; }
+  .admin-rsvp-name { flex:1; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .admin-rsvp-btns { display:flex; gap:3px; flex-shrink:0; }
+  .arb { width:26px; height:26px; border-radius:5px; border:none; cursor:pointer; font-size:0.8rem; opacity:0.45; transition:all 0.15s; }
+  .arb:hover { opacity:1; transform:scale(1.1); }
+  .arb.active { opacity:1; outline:2px solid #333; outline-offset:1px; }
+  .arb-yes { background:var(--yes); color:#fff; }
+  .arb-maybe { background:var(--maybe); color:#fff; }
+  .arb-no { background:var(--no); color:#fff; }
+  .arb-reset { background:var(--pending); color:#fff; }
+
   /* LOADING */
   .loading { text-align: center; padding: 40px; color: var(--text2); font-size: 0.9rem; }
 
@@ -439,7 +468,7 @@
   <div>
     <h1>📅 Calendario Riunioni</h1>
     <div class="subtitle" id="assoc-name">Associazione</div>
-    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v7</div>
+    <div style="font-size:0.68rem;opacity:0.55;margin-top:1px">v8</div>
   </div>
   <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
 </header>
@@ -706,6 +735,29 @@ function renderAdminEvents() {
           <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}','${ev.title.replace(/'/g,"\\'")}')">🗑️</button>
         </div>
       </div>
+      <div class="toggle-section" onclick="toggleSection(this)" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <span style="font-size:0.8rem;font-weight:600;color:var(--text2)">
+          <span class="toggle-icon">▼</span> Gestisci risposte invitati
+        </span>
+      </div>
+      <div class="toggleable-content hidden">
+        <div class="admin-rsvp-grid">
+          ${getInviteesForEvent(ev.id).map(inv => `
+            <div class="admin-rsvp-row">
+              <span class="admin-rsvp-name">${inv.name}</span>
+              <div class="admin-rsvp-btns">
+                <button class="arb arb-yes ${inv.status==='yes'?'active':''}" title="Sì"
+                  onclick="adminSetRsvp('${ev.id}','${inv.id}','yes',this)">✓</button>
+                <button class="arb arb-maybe ${inv.status==='maybe'?'active':''}" title="Forse"
+                  onclick="adminSetRsvp('${ev.id}','${inv.id}','maybe',this)">?</button>
+                <button class="arb arb-no ${inv.status==='no'?'active':''}" title="No"
+                  onclick="adminSetRsvp('${ev.id}','${inv.id}','no',this)">✗</button>
+                <button class="arb arb-reset" title="Reset a In attesa"
+                  onclick="adminSetRsvp('${ev.id}','${inv.id}','pending',this)">↺</button>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -794,6 +846,34 @@ async function saveEvent() {
     closeModal('modal-event');
   } catch(e) {
     alert('Errore: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN — OVERRIDE RSVP
+// ═══════════════════════════════════════════════════════
+async function adminSetRsvp(eventId, inviteeId, status, btn) {
+  const row = btn.closest('.admin-rsvp-row');
+  row.querySelectorAll('.arb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  try {
+    const existing = allRsvp.find(r => r.event_id === eventId && r.invitee_id === inviteeId);
+    if (existing) {
+      await sb(`rsvp?event_id=eq.${eventId}&invitee_id=eq.${inviteeId}`, 'PATCH',
+        { status, responded_at: new Date().toISOString() });
+      existing.status = status;
+    } else {
+      const res = await sb('rsvp', 'POST',
+        { event_id: eventId, invitee_id: inviteeId, status, responded_at: new Date().toISOString() });
+      allRsvp.push(res[0]);
+    }
+    renderPublic();
+    // Colore della riga in base allo stato
+    row.style.borderColor = {yes:'var(--yes)',no:'var(--no)',maybe:'var(--maybe)',pending:'var(--border)'}[status];
+    row.style.background = {yes:'#e8f5e9',no:'#fdecea',maybe:'#fff3e0',pending:'var(--surface2)'}[status];
+  } catch(e) {
+    alert('Errore: ' + e.message);
+    btn.classList.remove('active');
   }
 }
 
