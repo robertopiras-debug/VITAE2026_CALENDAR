@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario Riunioni</title>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: #d8d3c8;
+    --text: #1a1814;
+    --text2: #5c564d;
+    --accent: #2d6a4f;
+    --accent-light: #d8f3dc;
+    --accent2: #b7472a;
+    --yes: #2d6a4f;
+    --no: #b7472a;
+    --maybe: #c77d2a;
+    --pending: #8a8278;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --radius: 10px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.02em; }
+  header .subtitle { font-size: 0.8rem; opacity: 0.75; margin-top: 2px; }
+  #admin-btn {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+  }
+  #admin-btn:hover { background: rgba(255,255,255,0.28); }
+
+  /* MAIN LAYOUT */
+  main { max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid var(--border); }
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text2);
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: all 0.15s;
+    position: relative;
+    bottom: -2px;
+  }
+  .tab.active {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .tab:hover:not(.active) { color: var(--accent); }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+
+  /* EVENT CARD */
+  .event-card { position: relative; }
+  .event-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+  .event-date-box {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    min-width: 58px;
+    text-align: center;
+    padding: 8px 10px;
+    flex-shrink: 0;
+  }
+  .event-date-box .day { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+  .event-date-box .month { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
+  .event-date-box .year { font-size: 0.7rem; opacity: 0.7; }
+  .event-info h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+  .event-meta { font-size: 0.82rem; color: var(--text2); display: flex; flex-wrap: wrap; gap: 10px; }
+  .event-meta span::before { margin-right: 4px; }
+
+  /* RSVP BAR */
+  .rsvp-summary { margin-bottom: 14px; }
+  .rsvp-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    overflow: hidden;
+    display: flex;
+    margin-top: 8px;
+  }
+  .rsvp-bar-yes { background: var(--yes); }
+  .rsvp-bar-no { background: var(--no); }
+  .rsvp-bar-maybe { background: var(--maybe); }
+  .rsvp-bar-pending { background: var(--pending); opacity: 0.35; }
+
+  .rsvp-counts { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8rem; margin-top: 6px; }
+  .rsvp-count { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dot-yes { background: var(--yes); }
+  .dot-no { background: var(--no); }
+  .dot-maybe { background: var(--maybe); }
+  .dot-pending { background: var(--pending); opacity: 0.5; }
+
+  /* INVITEE LIST */
+  .invitee-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .invitee-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .invitee-pill.status-yes { border-color: var(--yes); background: #e8f5e9; }
+  .invitee-pill.status-no { border-color: var(--no); background: #fdecea; }
+  .invitee-pill.status-maybe { border-color: var(--maybe); background: #fff3e0; }
+  .invitee-name { font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .badge-yes { background: var(--yes); color: #fff; }
+  .badge-no { background: var(--no); color: #fff; }
+  .badge-maybe { background: var(--maybe); color: #fff; }
+  .badge-pending { background: var(--pending); color: #fff; opacity: 0.7; }
+
+  /* RSVP FORM */
+  .rsvp-form-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .rsvp-form-section h4 { font-size: 0.85rem; color: var(--text2); margin-bottom: 10px; }
+  .rsvp-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .rsvp-btn {
+    padding: 8px 18px;
+    border-radius: 7px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .rsvp-btn-yes { background: var(--yes); color: #fff; }
+  .rsvp-btn-yes:hover { opacity: 0.85; }
+  .rsvp-btn-no { background: var(--no); color: #fff; }
+  .rsvp-btn-no:hover { opacity: 0.85; }
+  .rsvp-btn-maybe { background: var(--maybe); color: #fff; }
+  .rsvp-btn-maybe:hover { opacity: 0.85; }
+  .rsvp-btn.selected { outline: 3px solid var(--text); outline-offset: 2px; }
+
+  /* INVITEE SELECTOR */
+  .invitee-selector {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .invitee-selector label { font-size: 0.85rem; font-weight: 500; }
+  .invitee-selector select {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font-size: 0.85rem;
+    min-width: 200px;
+  }
+
+  /* FORMS (admin) */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 5px; color: var(--text2); }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    font-size: 0.9rem;
+    transition: border 0.15s;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+  .btn {
+    padding: 9px 20px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-danger { background: var(--accent2); color: #fff; }
+  .btn-danger:hover { opacity: 0.88; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { background: var(--surface2); padding: 9px 12px; text-align: left; font-weight: 700; border-bottom: 2px solid var(--border); }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: #fafaf8; }
+
+  /* LOGIN */
+  #login-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  #login-overlay.hidden { display: none; }
+  .login-box {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 32px;
+    width: 320px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  .login-box h2 { margin-bottom: 20px; font-size: 1.1rem; color: var(--accent); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 90;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-box {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 28px;
+    width: 480px;
+    max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-box h3 { margin-bottom: 20px; font-size: 1rem; color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ALERTS */
+  .alert {
+    padding: 10px 16px;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+  }
+  .alert-success { background: var(--accent-light); color: var(--accent); border: 1px solid #95d5b2; }
+  .alert-error { background: #fdecea; color: var(--accent2); border: 1px solid #f5c6cb; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px 20px; color: var(--text2); }
+  .empty .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 40px; color: var(--text2); font-size: 0.9rem; }
+
+  /* TOGGLE */
+  .toggle-section { cursor: pointer; user-select: none; }
+  .toggle-section .toggle-icon { transition: transform 0.2s; display: inline-block; }
+  .toggle-section.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .toggleable-content { margin-top: 12px; }
+  .toggleable-content.hidden { display: none; }
+
+  /* ASSIGN INVITEES */
+  .assign-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .assign-chip {
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 2px solid var(--border);
+    font-size: 0.78rem;
+    cursor: pointer;
+    background: var(--surface2);
+    transition: all 0.15s;
+  }
+  .assign-chip.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text2);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" class="hidden">
+  <div class="login-box">
+    <h2>🔐 Accesso Admin</h2>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="admin-password" placeholder="Inserisci password admin" />
+    </div>
+    <div id="login-error" class="alert alert-error" style="display:none"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" onclick="doLogin()">Accedi</button>
+      <button class="btn btn-secondary" onclick="closeLogin()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUOVO EVENTO -->
+<div id="modal-event" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3 id="modal-event-title">Nuova Riunione</h3>
+    <div class="form-group">
+      <label>Titolo *</label>
+      <input type="text" id="ev-title" placeholder="es. Assemblea Ordinaria" />
+    </div>
+    <div class="form-group">
+      <label>Descrizione</label>
+      <textarea id="ev-desc" rows="2" placeholder="Ordine del giorno, note..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Data *</label>
+        <input type="date" id="ev-date" />
+      </div>
+      <div class="form-group">
+        <label>Ora</label>
+        <input type="time" id="ev-time" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Luogo</label>
+      <input type="text" id="ev-location" placeholder="es. Sede Associazione, via..." />
+    </div>
+    <div class="form-group">
+      <label>Assegna Invitati</label>
+      <div id="assign-list" class="assign-list"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-event')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUOVO INVITATO -->
+<div id="modal-invitee" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3>Nuovo Invitato</h3>
+    <div class="form-group">
+      <label>Nome e Cognome *</label>
+      <input type="text" id="inv-name" placeholder="Mario Rossi" />
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="inv-email" placeholder="mario@example.com" />
+    </div>
+    <div class="form-group">
+      <label>WhatsApp</label>
+      <input type="text" id="inv-whatsapp" placeholder="+39 333 1234567" />
+    </div>
+    <div class="form-group">
+      <label>Note</label>
+      <input type="text" id="inv-notes" placeholder="Note opzionali" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-invitee')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveInvitee()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>📅 Calendario Riunioni</h1>
+    <div class="subtitle" id="assoc-name">Associazione</div>
+  </div>
+  <button id="admin-btn" onclick="toggleAdmin()">⚙️ Admin</button>
+</header>
+
+<main>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-panel="panel-public" onclick="switchTab(this)">📋 Riunioni</div>
+    <div class="tab" data-panel="panel-rsvp" onclick="switchTab(this)">✅ La mia risposta</div>
+    <div class="tab admin-tab" data-panel="panel-admin-events" onclick="switchTab(this)" style="display:none">🗓️ Gestione Riunioni</div>
+    <div class="tab admin-tab" data-panel="panel-admin-invitees" onclick="switchTab(this)" style="display:none">👥 Gestione Invitati</div>
+  </div>
+
+  <!-- PANEL: RIUNIONI PUBBLICO -->
+  <div id="panel-public" class="panel active">
+    <div id="public-events-list"><div class="loading">Caricamento riunioni...</div></div>
+  </div>
+
+  <!-- PANEL: LA MIA RISPOSTA -->
+  <div id="panel-rsvp" class="panel">
+    <div class="card" style="margin-bottom:20px">
+      <div class="invitee-selector">
+        <label>Chi sei?</label>
+        <select id="rsvp-invitee-select" onchange="loadMyRsvp()">
+          <option value="">— Seleziona il tuo nome —</option>
+        </select>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text2)">Seleziona il tuo nome per vedere le riunioni e rispondere.</div>
+    </div>
+    <div id="rsvp-events-list"></div>
+  </div>
+
+  <!-- PANEL: ADMIN EVENTI -->
+  <div id="panel-admin-events" class="panel">
+    <div class="section-title">
+      Riunioni
+      <button class="btn btn-primary btn-sm" onclick="openModalEvent()">+ Nuova Riunione</button>
+    </div>
+    <div id="admin-events-list"><div class="loading">Caricamento...</div></div>
+  </div>
+
+  <!-- PANEL: ADMIN INVITATI -->
+  <div id="panel-admin-invitees" class="panel">
+    <div class="section-title">
+      Invitati
+      <button class="btn btn-primary btn-sm" onclick="openModalInvitee()">+ Nuovo Invitato</button>
+    </div>
+    <div id="admin-invitees-table"></div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIGURAZIONE
+// ═══════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://qgjqvomcvuubegbqmbhg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnanF2b21jdnV1YmVnYnFtYmhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMzk3NzgsImV4cCI6MjA5NjgxNTc3OH0.xV0O2U1gOo2HhA96QVCoBAtlW78JLc4gYqQudUuAgk4';
+const ADMIN_PASSWORD = 'admin2025'; // ← CAMBIA QUESTA PASSWORD
+
+// Nome associazione (modifica liberamente)
+const ASSOC_NAME = 'La mia Associazione';
+document.getElementById('assoc-name').textContent = ASSOC_NAME;
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let isAdmin = false;
+let allEvents = [];
+let allInvitees = [];
+let allRsvp = [];
+let editingEventId = null;
+let selectedAssignees = new Set();
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE API
+// ═══════════════════════════════════════════════════════
+async function sb(path, method = 'GET', body = null, extra = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Prefer': 'return=representation',
+    ...extra
+  };
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, opts);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function fetchAll() {
+  [allEvents, allInvitees, allRsvp] = await Promise.all([
+    sb('events?select=*&order=event_date.asc'),
+    sb('invitees?select=*&order=name.asc'),
+    sb('rsvp?select=*')
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+function fmtDay(d) { return new Date(d + 'T12:00:00').getDate(); }
+function fmtMonth(d) { return new Date(d + 'T12:00:00').toLocaleDateString('it-IT', { month: 'short' }); }
+function fmtYear(d) { return new Date(d + 'T12:00:00').getFullYear(); }
+
+function getRsvpForEvent(eventId) {
+  return allRsvp.filter(r => r.event_id === eventId);
+}
+function getInviteesForEvent(eventId) {
+  const rsvps = getRsvpForEvent(eventId);
+  return rsvps.map(r => {
+    const inv = allInvitees.find(i => i.id === r.invitee_id);
+    return { ...inv, status: r.status, rsvp_id: r.id };
+  }).filter(x => x.id);
+}
+function countStatus(eventId, status) {
+  return getRsvpForEvent(eventId).filter(r => r.status === status).length;
+}
+
+function statusLabel(s) {
+  return { yes: 'Sì', no: 'No', maybe: 'Forse', pending: 'In attesa' }[s] || s;
+}
+function statusClass(s) {
+  return { yes: 'badge-yes', no: 'badge-no', maybe: 'badge-maybe', pending: 'badge-pending' }[s] || '';
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER PUBBLICO
+// ═══════════════════════════════════════════════════════
+function renderPublic() {
+  const container = document.getElementById('public-events-list');
+  if (!allEvents.length) {
+    container.innerHTML = `<div class="empty"><div class="icon">📅</div><p>Nessuna riunione programmata.</p></div>`;
+    return;
+  }
+  container.innerHTML = allEvents.map(ev => {
+    const invitees = getInviteesForEvent(ev.id);
+    const total = invitees.length;
+    const yes = invitees.filter(i => i.status === 'yes').length;
+    const no = invitees.filter(i => i.status === 'no').length;
+    const maybe = invitees.filter(i => i.status === 'maybe').length;
+    const pending = invitees.filter(i => i.status === 'pending').length;
+    const pctYes = total ? (yes / total) * 100 : 0;
+    const pctNo = total ? (no / total) * 100 : 0;
+    const pctMaybe = total ? (maybe / total) * 100 : 0;
+    const pctPending = total ? (pending / total) * 100 : 0;
+
+    const invHtml = invitees.length ? invitees.map(i => `
+      <div class="invitee-pill status-${i.status}">
+        <span class="invitee-name">${i.name}</span>
+        <span class="status-badge ${statusClass(i.status)}">${statusLabel(i.status)}</span>
+      </div>`).join('') : '<span style="font-size:0.8rem;color:var(--text2)">Nessun invitato assegnato</span>';
+
+    return `
+    <div class="card event-card">
+      <div class="event-header">
+        <div class="event-date-box">
+          <div class="day">${fmtDay(ev.event_date)}</div>
+          <div class="month">${fmtMonth(ev.event_date)}</div>
+          <div class="year">${fmtYear(ev.event_date)}</div>
+        </div>
+        <div class="event-info">
+          <h3>${ev.title}</h3>
+          <div class="event-meta">
+            ${ev.event_time ? `<span>🕐 ${ev.event_time.substring(0,5)}</span>` : ''}
+            ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+            ${ev.description ? `<span style="color:var(--text2)">${ev.description}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      ${total > 0 ? `
+      <div class="rsvp-summary">
+        <div class="rsvp-counts">
+          <div class="rsvp-count"><div class="dot dot-yes"></div> Sì: <strong>${yes}</strong></div>
+          <div class="rsvp-count"><div class="dot dot-no"></div> No: <strong>${no}</strong></div>
+          <div class="rsvp-count"><div class="dot dot-maybe"></div> Forse: <strong>${maybe}</strong></div>
+          <div class="rsvp-count"><div class="dot dot-pending"></div> In attesa: <strong>${pending}</strong></div>
+        </div>
+        <div class="rsvp-bar">
+          <div class="rsvp-bar-yes" style="width:${pctYes}%"></div>
+          <div class="rsvp-bar-no" style="width:${pctNo}%"></div>
+          <div class="rsvp-bar-maybe" style="width:${pctMaybe}%"></div>
+          <div class="rsvp-bar-pending" style="width:${pctPending}%"></div>
+        </div>
+      </div>` : ''}
+      <div class="toggle-section" onclick="toggleSection(this)">
+        <span style="font-size:0.8rem;font-weight:600;color:var(--text2)">
+          <span class="toggle-icon">▼</span> Risposte invitati (${total})
+        </span>
+      </div>
+      <div class="toggleable-content hidden">
+        <div class="invitee-grid">${invHtml}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSection(el) {
+  el.classList.toggle('collapsed');
+  el.nextElementSibling.classList.toggle('hidden');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER RSVP (vista invitato)
+// ═══════════════════════════════════════════════════════
+function populateInviteeSelect() {
+  const sel = document.getElementById('rsvp-invitee-select');
+  sel.innerHTML = '<option value="">— Seleziona il tuo nome —</option>' +
+    allInvitees.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+}
+
+function loadMyRsvp() {
+  const inviteeId = document.getElementById('rsvp-invitee-select').value;
+  const container = document.getElementById('rsvp-events-list');
+  if (!inviteeId) { container.innerHTML = ''; return; }
+
+  // Solo eventi a cui l'invitato è assegnato
+  const myRsvp = allRsvp.filter(r => r.invitee_id === inviteeId);
+  const myEventIds = myRsvp.map(r => r.event_id);
+  const myEvents = allEvents.filter(ev => myEventIds.includes(ev.id));
+
+  if (!myEvents.length) {
+    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>Non sei invitato a nessuna riunione ancora.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = myEvents.map(ev => {
+    const rsvp = myRsvp.find(r => r.event_id === ev.id);
+    const current = rsvp ? rsvp.status : 'pending';
+    return `
+    <div class="card">
+      <div class="event-header">
+        <div class="event-date-box">
+          <div class="day">${fmtDay(ev.event_date)}</div>
+          <div class="month">${fmtMonth(ev.event_date)}</div>
+          <div class="year">${fmtYear(ev.event_date)}</div>
+        </div>
+        <div class="event-info">
+          <h3>${ev.title}</h3>
+          <div class="event-meta">
+            ${ev.event_time ? `<span>🕐 ${ev.event_time.substring(0,5)}</span>` : ''}
+            ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="rsvp-form-section">
+        <h4>La tua risposta:</h4>
+        <div class="rsvp-buttons" id="rsvp-btns-${ev.id}">
+          <button class="rsvp-btn rsvp-btn-yes ${current==='yes'?'selected':''}"
+            onclick="submitRsvp('${ev.id}','${inviteeId}','yes',this)">✅ Sì, ci sarò</button>
+          <button class="rsvp-btn rsvp-btn-maybe ${current==='maybe'?'selected':''}"
+            onclick="submitRsvp('${ev.id}','${inviteeId}','maybe',this)">🤔 Forse</button>
+          <button class="rsvp-btn rsvp-btn-no ${current==='no'?'selected':''}"
+            onclick="submitRsvp('${ev.id}','${inviteeId}','no',this)">❌ Non posso</button>
+        </div>
+        <div id="rsvp-msg-${ev.id}" style="margin-top:8px;font-size:0.8rem"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function submitRsvp(eventId, inviteeId, status, btn) {
+  const container = btn.closest('.rsvp-buttons');
+  container.querySelectorAll('.rsvp-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  const msgEl = document.getElementById(`rsvp-msg-${eventId}`);
+  msgEl.textContent = 'Salvataggio...';
+
+  try {
+    // Upsert RSVP
+    await sb('rsvp', 'POST',
+      { event_id: eventId, invitee_id: inviteeId, status, responded_at: new Date().toISOString() },
+      { 'Prefer': 'resolution=merge-duplicates,return=representation' }
+    );
+    // Aggiorna locale
+    const idx = allRsvp.findIndex(r => r.event_id === eventId && r.invitee_id === inviteeId);
+    if (idx >= 0) allRsvp[idx].status = status;
+    else allRsvp.push({ event_id: eventId, invitee_id: inviteeId, status });
+
+    msgEl.innerHTML = `<span style="color:var(--yes)">✓ Risposta salvata: <strong>${statusLabel(status)}</strong></span>`;
+    renderPublic();
+  } catch(e) {
+    msgEl.innerHTML = `<span style="color:var(--no)">Errore: ${e.message}</span>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN — EVENTI
+// ═══════════════════════════════════════════════════════
+function renderAdminEvents() {
+  const container = document.getElementById('admin-events-list');
+  if (!allEvents.length) {
+    container.innerHTML = `<div class="empty"><div class="icon">📅</div><p>Nessuna riunione. Creane una.</p></div>`;
+    return;
+  }
+  container.innerHTML = allEvents.map(ev => {
+    const invitees = getInviteesForEvent(ev.id);
+    return `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:flex-start;gap:12px;justify-content:space-between">
+        <div>
+          <strong>${ev.title}</strong>
+          <div class="event-meta" style="margin-top:4px">
+            <span>📅 ${fmtDate(ev.event_date)}</span>
+            ${ev.event_time ? `<span>🕐 ${ev.event_time.substring(0,5)}</span>` : ''}
+            ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+          </div>
+          ${ev.description ? `<div style="font-size:0.8rem;color:var(--text2);margin-top:4px">${ev.description}</div>` : ''}
+          <div style="margin-top:8px;font-size:0.8rem;color:var(--text2)">
+            Invitati: ${invitees.length} |
+            Sì: ${invitees.filter(i=>i.status==='yes').length} |
+            No: ${invitees.filter(i=>i.status==='no').length} |
+            Forse: ${invitees.filter(i=>i.status==='maybe').length} |
+            In attesa: ${invitees.filter(i=>i.status==='pending').length}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-secondary btn-sm" onclick="openModalEvent('${ev.id}')">✏️ Modifica</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}','${ev.title.replace(/'/g,"\\'")}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openModalEvent(eventId = null) {
+  editingEventId = eventId;
+  selectedAssignees = new Set();
+
+  const assignList = document.getElementById('assign-list');
+  assignList.innerHTML = allInvitees.map(inv => {
+    let selected = false;
+    if (eventId) {
+      const existing = allRsvp.find(r => r.event_id === eventId && r.invitee_id === inv.id);
+      if (existing) { selected = true; selectedAssignees.add(inv.id); }
+    }
+    return `<div class="assign-chip ${selected?'selected':''}" data-id="${inv.id}" onclick="toggleAssignee(this,'${inv.id}')">${inv.name}</div>`;
+  }).join('');
+
+  if (eventId) {
+    const ev = allEvents.find(e => e.id === eventId);
+    document.getElementById('modal-event-title').textContent = 'Modifica Riunione';
+    document.getElementById('ev-title').value = ev.title;
+    document.getElementById('ev-desc').value = ev.description || '';
+    document.getElementById('ev-date').value = ev.event_date;
+    document.getElementById('ev-time').value = ev.event_time ? ev.event_time.substring(0,5) : '';
+    document.getElementById('ev-location').value = ev.location || '';
+  } else {
+    document.getElementById('modal-event-title').textContent = 'Nuova Riunione';
+    document.getElementById('ev-title').value = '';
+    document.getElementById('ev-desc').value = '';
+    document.getElementById('ev-date').value = '';
+    document.getElementById('ev-time').value = '';
+    document.getElementById('ev-location').value = '';
+  }
+  document.getElementById('modal-event').classList.remove('hidden');
+}
+
+function toggleAssignee(el, id) {
+  el.classList.toggle('selected');
+  if (selectedAssignees.has(id)) selectedAssignees.delete(id);
+  else selectedAssignees.add(id);
+}
+
+async function saveEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  const date = document.getElementById('ev-date').value;
+  if (!title || !date) { alert('Titolo e data sono obbligatori'); return; }
+
+  const payload = {
+    title,
+    description: document.getElementById('ev-desc').value.trim() || null,
+    event_date: date,
+    event_time: document.getElementById('ev-time').value || null,
+    location: document.getElementById('ev-location').value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    let eventId = editingEventId;
+    if (editingEventId) {
+      await sb(`events?id=eq.${editingEventId}`, 'PATCH', payload);
+    } else {
+      const res = await sb('events', 'POST', payload);
+      eventId = res[0].id;
+    }
+
+    // Gestisci assegnazioni RSVP
+    // Rimuovi quelli deselezionati
+    const existingRsvp = allRsvp.filter(r => r.event_id === eventId);
+    for (const r of existingRsvp) {
+      if (!selectedAssignees.has(r.invitee_id)) {
+        await sb(`rsvp?id=eq.${r.id}`, 'DELETE');
+      }
+    }
+    // Aggiungi nuovi
+    const existingIds = existingRsvp.map(r => r.invitee_id);
+    for (const invId of selectedAssignees) {
+      if (!existingIds.includes(invId)) {
+        await sb('rsvp', 'POST', { event_id: eventId, invitee_id: invId, status: 'pending' });
+      }
+    }
+
+    await fetchAll();
+    renderPublic();
+    renderAdminEvents();
+    closeModal('modal-event');
+  } catch(e) {
+    alert('Errore: ' + e.message);
+  }
+}
+
+async function deleteEvent(id, title) {
+  if (!confirm(`Eliminare la riunione "${title}"? Verranno cancellate anche tutte le risposte.`)) return;
+  try {
+    await sb(`events?id=eq.${id}`, 'DELETE');
+    await fetchAll();
+    renderPublic();
+    renderAdminEvents();
+  } catch(e) { alert('Errore: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN — INVITATI
+// ═══════════════════════════════════════════════════════
+function renderAdminInvitees() {
+  const container = document.getElementById('admin-invitees-table');
+  if (!allInvitees.length) {
+    container.innerHTML = `<div class="empty"><div class="icon">👥</div><p>Nessun invitato. Aggiungine uno.</p></div>`;
+    return;
+  }
+  container.innerHTML = `
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Email</th>
+        <th>WhatsApp</th>
+        <th>Note</th>
+        <th>Link RSVP</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      ${allInvitees.map(inv => `
+        <tr>
+          <td><strong>${inv.name}</strong></td>
+          <td style="color:var(--text2)">${inv.email || '—'}</td>
+          <td style="color:var(--text2)">${inv.whatsapp || '—'}</td>
+          <td style="color:var(--text2)">${inv.notes || '—'}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="copyRsvpLink('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">📋 Copia link</button>
+          </td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteInvitee('${inv.id}','${inv.name.replace(/'/g,"\\'")}')">🗑️</button>
+          </td>
+        </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function copyRsvpLink(inviteeId, name) {
+  const url = window.location.href.split('?')[0] + `?invitee=${inviteeId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    alert(`Link per ${name} copiato!\n\n${url}\n\nInvialo via WhatsApp o email.`);
+  }).catch(() => {
+    prompt(`Link per ${name}:`, url);
+  });
+}
+
+function openModalInvitee() {
+  document.getElementById('inv-name').value = '';
+  document.getElementById('inv-email').value = '';
+  document.getElementById('inv-whatsapp').value = '';
+  document.getElementById('inv-notes').value = '';
+  document.getElementById('modal-invitee').classList.remove('hidden');
+}
+
+async function saveInvitee() {
+  const name = document.getElementById('inv-name').value.trim();
+  if (!name) { alert('Il nome è obbligatorio'); return; }
+  try {
+    await sb('invitees', 'POST', {
+      name,
+      email: document.getElementById('inv-email').value.trim() || null,
+      whatsapp: document.getElementById('inv-whatsapp').value.trim() || null,
+      notes: document.getElementById('inv-notes').value.trim() || null
+    });
+    await fetchAll();
+    renderAdminInvitees();
+    populateInviteeSelect();
+    closeModal('modal-invitee');
+  } catch(e) { alert('Errore: ' + e.message); }
+}
+
+async function deleteInvitee(id, name) {
+  if (!confirm(`Eliminare ${name}? Verranno cancellate tutte le sue risposte.`)) return;
+  try {
+    await sb(`invitees?id=eq.${id}`, 'DELETE');
+    await fetchAll();
+    renderAdminInvitees();
+    renderPublic();
+    populateInviteeSelect();
+  } catch(e) { alert('Errore: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN AUTH
+// ═══════════════════════════════════════════════════════
+function toggleAdmin() {
+  if (isAdmin) {
+    isAdmin = false;
+    document.getElementById('admin-btn').textContent = '⚙️ Admin';
+    document.querySelectorAll('.admin-tab').forEach(t => t.style.display = 'none');
+    switchToPanel('panel-public');
+  } else {
+    document.getElementById('login-overlay').classList.remove('hidden');
+    setTimeout(() => document.getElementById('admin-password').focus(), 100);
+  }
+}
+
+function doLogin() {
+  const pwd = document.getElementById('admin-password').value;
+  if (pwd === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('admin-password').value = '';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('admin-btn').textContent = '🔓 Esci Admin';
+    document.querySelectorAll('.admin-tab').forEach(t => t.style.display = '');
+    renderAdminEvents();
+    renderAdminInvitees();
+  } else {
+    const err = document.getElementById('login-error');
+    err.textContent = 'Password errata';
+    err.style.display = 'block';
+  }
+}
+
+function closeLogin() {
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('admin-password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+document.getElementById('admin-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function switchTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(el.dataset.panel).classList.add('active');
+  if (el.dataset.panel === 'panel-rsvp') loadMyRsvp();
+}
+
+function switchToPanel(panelId) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.remove('active');
+    if (t.dataset.panel === panelId) t.classList.add('active');
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); });
+});
+
+// ═══════════════════════════════════════════════════════
+// DEEP LINK (invitato pre-selezionato via ?invitee=UUID)
+// ═══════════════════════════════════════════════════════
+function checkDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const invId = params.get('invitee');
+  if (invId) {
+    const sel = document.getElementById('rsvp-invitee-select');
+    sel.value = invId;
+    if (sel.value === invId) {
+      switchToPanel('panel-rsvp');
+      loadMyRsvp();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+(async function init() {
+  try {
+    await fetchAll();
+    renderPublic();
+    populateInviteeSelect();
+    checkDeepLink();
+  } catch(e) {
+    document.getElementById('public-events-list').innerHTML =
+      `<div class="card"><div class="alert alert-error">Errore connessione al database: ${e.message}</div></div>`;
+  }
+})();
+</script>
+</body>
+</html>
